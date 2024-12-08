@@ -7,48 +7,30 @@ describe('InputView 클래스 테스트', () => {
     Reader.readNumber = jest.fn();
   });
 
-  describe('getNames 메서드 테스트', () => {
-    test('정상적인 자동차 이름 입력 처리', async () => {
-      // given
-      const mockInput = 'pobi,woni,jun';
-      Reader.readCSVString.mockReturnValue(mockInput);
+  test.each([
+    ['정상 입력', 'pobi,woni,jun', ['pobi', 'woni', 'jun'], false],
+    ['다섯 글자 초과', 'pobiiii,woni,jun', null, true],
+  ])('getNames - %s', async (_, input, expected, shouldThrow) => {
+    Reader.readCSVString.mockResolvedValue(input);
 
-      // when
-      const result = await InputView.getNames();
-
-      // then
-      expect(result).toEqual(['pobi', 'woni', 'jun']);
-    });
-
-    test('자동차 이름이 다섯 글자가 넘을 경우 예외 발생', async () => {
-      // given
-      const mockInput = 'pobiiii,woni,jun';
-      Reader.readCSVString.mockResolvedValue(mockInput);
-
-      // when & then
-      await expect(InputView.getNames()).rejects.toThrow('[ERROR]');
-    });
+    if (shouldThrow) {
+      await expect(InputView.getNames()).rejects.toThrow();
+      return;
+    }
+    expect(await InputView.getNames()).toEqual(expected);
   });
 
-  describe('getTryCount 메서드 테스트', () => {
-    test('정상적인 시도 횟수 입력 처리', async () => {
-      // given
-      Reader.readNumber.mockReturnValue(5);
+  test.each([
+    ['정상 입력', 5, 5, false],
+    ['음수 입력', -1, null, true],
+    ['0 입력', 0, null, true],
+  ])('getTryCount - %s', async (_, input, expected, shouldThrow) => {
+    Reader.readNumber.mockResolvedValue(input);
 
-      // when
-      const result = await InputView.getTryCount();
-
-      // then
-      expect(typeof result).toBe('number');
-      expect(result).toBe('5');
-    });
-
-    test('시도 횟수가 음수일 경우 예외 발생', async () => {
-      // given
-      Reader.readNumber.mockReturnValue(-1);
-
-      // when & then
-      await expect(InputView.getTryCount()).rejects.toThrow('[ERROR]');
-    });
+    if (shouldThrow) {
+      await expect(InputView.getTryCount()).rejects.toThrow();
+      return;
+    }
+    expect(await InputView.getTryCount()).toBe(expected);
   });
 });

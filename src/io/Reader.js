@@ -1,9 +1,6 @@
 import { Console } from '@woowacourse/mission-utils';
-import { ERRORS } from '../constants/index.js';
+import { CONFIG, ERRORS } from '../constants/index.js';
 import { throwError } from '../utils/errorHandler.js';
-
-const CSV_SEPARATOR = ',';
-const CONFIRM_ANSWERS = Object.freeze(['y', 'n']);
 
 export default class Reader {
   static async readLine(query) {
@@ -13,39 +10,37 @@ export default class Reader {
   static async readNumber(query) {
     const normalizedLine = await this.#readAndNormalize(query);
 
-    if (!Number.isInteger(Number(normalizedLine))) {
-      throwError(ERRORS.invalidNumber);
-    }
+    this.#validateNumber(normalizedLine);
 
     return Number(normalizedLine);
   }
 
   static async readCSVString(query) {
     const normalizedLine = await this.#readAndNormalize(query);
-    const splittedLine = normalizedLine.split(CSV_SEPARATOR);
+    const items = this.#parseCSV(normalizedLine);
 
-    this.#validateSplittedLine(splittedLine);
-
-    return normalizedLine;
+    this.#validateCSVItems(items);
+    return items;
   }
 
   static async readCSVNumber(query) {
     const normalizedLine = await this.#readAndNormalize(query);
-    const splittedLine = normalizedLine.split(CSV_SEPARATOR);
+    const items = this.#parseCSV(normalizedLine);
 
-    this.#validateSplittedLine(splittedLine);
-    if (splittedLine.some((word) => !Number.isInteger(Number(word.trim())))) {
-      throwError(ERRORS.invalidNumber);
-    }
+    this.#validateCSVItems(items);
 
-    return normalizedLine;
+    return items.map((item) => {
+      this.#validateNumber(item);
+      return Number(item);
+    });
   }
 
   static async readConfirmation(query) {
     const normalizedInput = await this.#readAndNormalize(query);
     const answer = normalizedInput.toLowerCase();
 
-    if (!CONFIRM_ANSWERS.includes(answer)) {
+    const isValidAnswer = CONFIG.confirmAnswers.includes(answer);
+    if (!isValidAnswer) {
       throwError(ERRORS.invalidConfirmation);
     }
 
@@ -63,7 +58,18 @@ export default class Reader {
     return normalizedLine;
   }
 
-  static #validateSplittedLine(splittedLine) {
+  static #parseCSV(line) {
+    return line.split(CONFIG.csvDelimiter).map((item) => item.trim());
+  }
+
+  static #validateNumber(value) {
+    const number = Number(value);
+    if (isNaN(number) || !Number.isInteger(number) || number < 0) {
+      throwError(ERRORS.invalidNumber, { value });
+    }
+  }
+
+  static #validateCSVItems(splittedLine) {
     if (splittedLine.some((word) => word.trim() === '')) {
       throwError(ERRORS.invalidCSV);
     }
