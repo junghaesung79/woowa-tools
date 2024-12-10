@@ -1,36 +1,59 @@
-import { InputView } from '../src/view/index.js';
 import { Reader } from '../src/io/index.js';
+import { InputView } from '../src/view/index.js';
 
-describe('InputView 클래스 테스트', () => {
+jest.mock('../src/io/index.js', () => ({
+  Reader: {
+    readNumber: jest.fn(),
+    readCSVNumber: jest.fn(),
+  },
+}));
+
+describe('InputView 테스트', () => {
+  let inputView;
+
   beforeEach(() => {
-    Reader.readCSVString = jest.fn();
-    Reader.readNumber = jest.fn();
+    inputView = new InputView();
+    jest.clearAllMocks();
   });
 
-  test.each([
-    ['정상 입력', 'pobi,woni,jun', ['pobi', 'woni', 'jun'], false],
-    ['다섯 글자 초과', 'pobiiii,woni,jun', null, true],
-  ])('getNames - %s', async (_, input, expected, shouldThrow) => {
-    Reader.readCSVString.mockResolvedValue(input);
+  describe('getPurchasePrice 테스트', () => {
+    const testCases = [
+      ['정상 테스트', 8000, 8000, false],
+      ['예외 테스트', 500, null, true],
+    ];
 
-    if (shouldThrow) {
-      await expect(InputView.getNames()).rejects.toThrow();
-      return;
-    }
-    expect(await InputView.getNames()).toEqual(expected);
+    testCases.forEach(([description, input, output, isError]) => {
+      test(description, async () => {
+        Reader.readNumber.mockResolvedValue(input);
+
+        if (isError) {
+          await expect(inputView.getPurchasePrice()).rejects.toThrow();
+          return;
+        }
+        await expect(inputView.getPurchasePrice()).resolves.toBe(output);
+      });
+    });
   });
 
-  test.each([
-    ['정상 입력', 5, 5, false],
-    ['음수 입력', -1, null, true],
-    ['0 입력', 0, null, true],
-  ])('getTryCount - %s', async (_, input, expected, shouldThrow) => {
-    Reader.readNumber.mockResolvedValue(input);
+  describe('getBonusNumber 테스트', () => {
+    const testCases = [
+      ['정상 테스트', 7, 7, false],
+      ['예외 테스트', 6, null, true],
+      ['예외 테스트', 0, null, true],
+      ['예외 테스트', 46, null, true],
+    ];
 
-    if (shouldThrow) {
-      await expect(InputView.getTryCount()).rejects.toThrow();
-      return;
-    }
-    expect(await InputView.getTryCount()).toBe(expected);
+    testCases.forEach(([description, input, output, isError]) => {
+      test(description, async () => {
+        const winningNumbers = [1, 2, 3, 4, 5, 6];
+        Reader.readNumber.mockResolvedValue(input);
+
+        if (isError) {
+          await expect(inputView.getBonusNumber(winningNumbers)).rejects.toThrow();
+          return;
+        }
+        await expect(inputView.getBonusNumber(winningNumbers)).resolves.toBe(output);
+      });
+    });
   });
 });

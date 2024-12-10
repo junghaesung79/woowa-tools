@@ -3,7 +3,7 @@ import { CONFIG, ERRORS } from '../constants/index.js';
 import { throwError } from '../utils/errorHandler.js';
 
 export default class Reader {
-  static async readLine(query) {
+  static async readString(query) {
     return this.#readAndNormalize(query);
   }
 
@@ -64,7 +64,7 @@ export default class Reader {
 
   static #validateNumber(value) {
     const number = Number(value);
-    if (isNaN(number) || !Number.isInteger(number) || number < 0) {
+    if (isNaN(number) || !Number.isInteger(number)) {
       throwError(ERRORS.invalidNumber, { value });
     }
   }
